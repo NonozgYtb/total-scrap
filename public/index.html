@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="fr" class="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- START TITLE -->
+        <title>Prix des Carburants</title>
+        <!-- END TITLE -->
+
+        <!-- Favicon Station Essence (SVG Data URI) -->
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%23f59e0b'%3E%3Cpath d='M32 64C32 28.7 60.7 0 96 0L256 0c35.3 0 64 28.7 64 64l0 192 8 0c48.6 0 88 39.4 88 88l0 32c0 13.3 10.7 24 24 24s24-10.7 24-24l0-154c-27.6-7.1-48-32.2-48-62l0-59.5-25.8-28.3c-8.9-9.8-8.2-25 1.6-33.9s25-8.2 33.9 1.6l71.7 78.8c9.4 10.3 14.6 23.7 14.6 37.7L512 376c0 39.8-32.2 72-72 72s-72-32.2-72-72l0-32c0-22.1-17.9-40-40-40l-8 0 0 161.4c9.3 3.3 16 12.2 16 22.6 0 13.3-10.7 24-24 24L40 512c-13.3 0-24-10.7-24-24 0-10.5 6.7-19.3 16-22.6L32 64zM96 80l0 96c0 8.8 7.2 16 16 16l128 0c8.8 0 16-7.2 16-16l0-96c0-8.8-7.2-16-16-16L112 64c-8.8 0-16 7.2-16 16z'/%3E%3C/svg%3E"
+        />
+
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ["Inter", "sans-serif"],
+                        },
+                    },
+                },
+            };
+        </script>
+
+        <!-- Polices & Icônes -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+    </head>
+    <body
+        class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen font-sans antialiased pb-12 transition-colors duration-200"
+    >
+        <!-- EN-TÊTE PRINCIPAL -->
+        <header
+            class="border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 sticky top-0 z-20 backdrop-blur-md px-4 py-4 transition-colors duration-200"
+        >
+            <div
+                class="max-w-5xl mx-auto flex items-center justify-between gap-4"
+            >
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center text-lg"
+                    >
+                        <i class="fa-solid fa-gas-pump"></i>
+                    </div>
+                    <div>
+                        <h1
+                            class="text-base font-bold tracking-tight text-slate-900 dark:text-white"
+                        >
+                            Station-Service & Prix du Carburant
+                        </h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            <!-- START RESULTS RESUME -->
+                            Résultats des recherches
+                            <!-- END RESULTS RESUME -->
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bouton Toggle Thème (Clair / Sombre) -->
+                <button
+                    onclick="toggleTheme()"
+                    id="themeToggleBtn"
+                    class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 transition flex items-center gap-2 text-xs font-semibold"
+                    title="Changer de thème"
+                >
+                    <i
+                        id="themeIcon"
+                        class="fa-solid fa-moon text-amber-500"
+                    ></i>
+                    <span id="themeText" class="hidden sm:inline"
+                        >Mode sombre</span
+                    >
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+            <!-- ONGLETS DE FILTRAGE DES 5 RECHERCHES -->
+            <div
+                class="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-4"
+            >
+                <!-- START BUTTONS -->
+                <button
+                    onclick="changerOnglet('TOUT')"
+                    id="onglet-TOUT"
+                    class="btn-onglet px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 transition"
+                >
+                    Toutes les recherches (5)
+                </button>
+                <!-- END BUTTONS -->
+            </div>
+
+            <!-- CONTENEUR DES RÉSULTATS PAR CATEGORIE -->
+            <div id="conteneurResultats" class="space-y-8">
+                <!-- Les cartes de stations sont générées dynamiquement par JS -->
+            </div>
+        </main>
+
+        <!-- LOGIQUE JAVASCRIPT -->
+        <script>
+            // Données brutes de l'API
+            /* START GET DATA */
+            let RAW_API_DATA = [];
+
+            fetch("/results.json")
+                .then((response) => response.json())
+                .then((data) => {
+                    RAW_API_DATA = data;
+                    afficherResultats();
+                })
+                .catch((error) => {
+                    console.error(
+                        "Erreur lors du chargement des données de l'API :",
+                        error,
+                    );
+                });
+            /* END GET DATA */
+
+            // Fonction de calcul de distance (Formule de Haversine en km)
+            function calculerDistance(lat1, lon1, lat2, lon2) {
+                if (
+                    lat1 == null ||
+                    lon1 == null ||
+                    lat2 == null ||
+                    lon2 == null
+                )
+                    return null;
+                const R = 6371; // Rayon moyen de la Terre en km
+                const dLat = ((lat2 - lat1) * Math.PI) / 180;
+                const dLon = ((lon2 - lon1) * Math.PI) / 180;
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos((lat1 * Math.PI) / 180) *
+                        Math.cos((lat2 * Math.PI) / 180) *
+                        Math.sin(dLon / 2) *
+                        Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            // Transformation des données brutes venant de l'API
+            const transformerDonneesApi = (rawData) =>
+                 rawData.map((groupe, index) => {
+                    const nomPlace = groupe.place
+                        ? groupe.place.name
+                        : `Recherche ${index + 1}`;
+
+                    // Coordonnées du point de base (centre de recherche)
+                    const baseCoords = groupe.place.coords;
+
+                    const baseLat = baseCoords ? baseCoords[0] : null;
+                    const baseLng = baseCoords ? baseCoords[1] : null;
+
+                    const stations = (groupe.bestPlaces || []).map((place) => {
+                        // Filtrage : SEULEMENT les carburants disponibles
+                        const carburantsDisponibles = (
+                            place.products_and_services || []
+                        )
+                            .filter(
+                                (prod) =>
+                                    prod.availability_status === "AVAILABLE",
+                            )
+                            .map((prod) => ({
+                                nom: prod.product_name
+                                    ? prod.product_name.trim()
+                                    : prod.product_code,
+                                code: prod.product_code,
+                                prix: prod.price,
+                            }));
+
+                        // Coordonnées de la station [longitude, latitude]
+                        const lng = place.coordinates
+                            ? place.coordinates[0]
+                            : 0;
+                        const lat = place.coordinates
+                            ? place.coordinates[1]
+                            : 0;
+                        const nomStation = place.name.startsWith(
+                            "TotalEnergies",
+                        )
+                            ? place.name
+                            : `TotalEnergies - ${place.name}`;
+
+                        // Calcul de la distance à partir du point de base
+                        const distanceKm =
+                            baseLat !== null && baseLng !== null && lat && lng
+                                ? calculerDistance(baseLat, baseLng, lat, lng)
+                                : null;
+
+                        return {
+                            nom: nomStation,
+                            adresse: place.address,
+                            est24h: Boolean(place["24/7"]),
+                            lat: lat,
+                            lng: lng,
+                            distanceKm: distanceKm,
+                            opening_hours: place.opening_hours,
+                            carburants: carburantsDisponibles,
+                        };
+                    });
+
+                    return {
+                        id: groupe.place.slug,
+                        titre: `${index + 1}. ${nomPlace}`,
+                        icone: groupe.place.icone,
+                        couleurIcone: groupe.place.couleurIcone,
+                        stations: stations,
+                    };
+                });
+            
+
+            // Fonction de formatage clair des horaires d'ouverture
+            function formaterHoraires(openingHoursObj, est24h) {
+                if (
+                    !openingHoursObj ||
+                    !openingHoursObj.opening_hours ||
+                    !Array.isArray(openingHoursObj.opening_hours)
+                ) {
+                    return est24h
+                        ? '<span class="text-emerald-600 dark:text-emerald-400 font-medium">Ouvert 24h/24, 7j/7</span>'
+                        : '<span class="text-slate-500">Horaires non renseignés</span>';
+                }
+
+                const joursNomsCourts = {
+                    MONDAY: "Lun",
+                    TUESDAY: "Mar",
+                    WEDNESDAY: "Mer",
+                    THURSDAY: "Jeu",
+                    FRIDAY: "Ven",
+                    SATURDAY: "Sam",
+                    SUNDAY: "Dim",
+                    HOLIDAY: "Fériés",
+                };
+
+                // Helper pour formater le libellé des jours (ex: "Jeu à Dim & Fériés", "Sam, Dim & Fériés", "Dim & Fériés")
+                function formaterLibelleJours(jours) {
+                    const aUnFerie = jours.includes("HOLIDAY");
+                    const joursReguliers = jours.filter((j) => j !== "HOLIDAY");
+                    const nomsReguliers = joursReguliers.map(
+                        (j) => joursNomsCourts[j] || j,
+                    );
+
+                    let texteRegulier = "";
+                    if (nomsReguliers.length >= 3) {
+                        texteRegulier = `${nomsReguliers[0]} à ${nomsReguliers[nomsReguliers.length - 1]}`;
+                    } else if (nomsReguliers.length === 2) {
+                        texteRegulier = aUnFerie
+                            ? `${nomsReguliers[0]}, ${nomsReguliers[1]}`
+                            : `${nomsReguliers[0]} & ${nomsReguliers[1]}`;
+                    } else if (nomsReguliers.length === 1) {
+                        texteRegulier = nomsReguliers[0];
+                    }
+
+                    if (aUnFerie) {
+                        const nomFerie = joursNomsCourts["HOLIDAY"] || "Fériés";
+                        return texteRegulier
+                            ? `${texteRegulier} & ${nomFerie}`
+                            : nomFerie;
+                    }
+
+                    return texteRegulier;
+                }
+
+                // Regroupement des jours ayant les mêmes horaires
+                const plages = [];
+                openingHoursObj.opening_hours.forEach((item) => {
+                    let horaireTexte = "";
+                    if (item.closed) {
+                        horaireTexte = "Fermé";
+                    } else if (item.slots && item.slots.length > 0) {
+                        horaireTexte = item.slots
+                            .map((s) => `${s.opens_at} - ${s.closes_at}`)
+                            .join(", ");
+                    } else {
+                        horaireTexte = "Ouvert";
+                    }
+
+                    if (
+                        plages.length > 0 &&
+                        plages[plages.length - 1].horaire === horaireTexte
+                    ) {
+                        plages[plages.length - 1].jours.push(item.day_of_week);
+                    } else {
+                        plages.push({
+                            jours: [item.day_of_week],
+                            horaire: horaireTexte,
+                        });
+                    }
+                });
+
+                return plages
+                    .map((p) => {
+                        const libelleJours = formaterLibelleJours(p.jours);
+                        return `<div><span class="font-medium text-slate-700 dark:text-slate-300">${libelleJours} :</span> <span class="text-slate-600 dark:text-slate-400">${p.horaire}</span></div>`;
+                    })
+                    .join("");
+            }
+
+            // Gestion du Thème Clair / Sombre via LocalStorage
+            function initTheme() {
+                const savedTheme = localStorage.getItem("theme");
+                if (savedTheme === "light") {
+                    document.documentElement.classList.remove("dark");
+                } else if (savedTheme === "dark") {
+                    document.documentElement.classList.add("dark");
+                } else {
+                    if (
+                        window.matchMedia &&
+                        window.matchMedia("(prefers-color-scheme: light)")
+                            .matches
+                    ) {
+                        document.documentElement.classList.remove("dark");
+                    } else {
+                        document.documentElement.classList.add("dark");
+                    }
+                }
+                updateThemeUI();
+            }
+
+            function toggleTheme() {
+                document.documentElement.classList.toggle("dark");
+                const isDark =
+                    document.documentElement.classList.contains("dark");
+                localStorage.setItem("theme", isDark ? "dark" : "light");
+                updateThemeUI();
+            }
+
+            function updateThemeUI() {
+                const isDark =
+                    document.documentElement.classList.contains("dark");
+                const icon = document.getElementById("themeIcon");
+                const text = document.getElementById("themeText");
+                if (icon) {
+                    icon.className = isDark
+                        ? "fa-solid fa-sun text-amber-400"
+                        : "fa-solid fa-moon text-slate-600";
+                }
+                if (text) {
+                    text.textContent = isDark ? "Mode sombre" : "Mode clair";
+                }
+            }
+
+            let ongletActif = "TOUT";
+
+            function changerOnglet(idOnglet) {
+                ongletActif = idOnglet;
+
+                document.querySelectorAll(".btn-onglet").forEach((btn) => {
+                    btn.className =
+                        "btn-onglet px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 transition";
+                });
+
+                const btnSelectionne = document.getElementById(
+                    `onglet-${idOnglet}`,
+                );
+                if (btnSelectionne) {
+                    btnSelectionne.className =
+                        "btn-onglet px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 transition";
+                }
+
+                afficherResultats();
+            }
+
+            function afficherResultats() {
+                const conteneur = document.getElementById("conteneurResultats");
+                conteneur.innerHTML = "";
+
+                // Transformation des données au chargement
+                const DONNEES_RECHERCHES = transformerDonneesApi(RAW_API_DATA);
+
+                const groupesAffiches =
+                    ongletActif === "TOUT"
+                        ? DONNEES_RECHERCHES
+                        : DONNEES_RECHERCHES.filter(
+                              (g) => g.id === ongletActif,
+                          );
+
+                groupesAffiches.forEach((groupe) => {
+                    if (groupe.stations.length === 0) return;
+
+                    const elementSection = document.createElement("section");
+                    elementSection.className = "space-y-4";
+
+                    const enTeteSection = `
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid ${groupe.icone} ${groupe.couleurIcone} text-base"></i>
+              <h2 class="text-sm font-bold tracking-wide uppercase text-slate-800 dark:text-slate-100">${groupe.titre}</h2>
+            </div>
+            <span class="text-xs font-mono text-slate-500 dark:text-slate-400">${groupe.stations.length} station(s)</span>
+          </div>
+        `;
+
+                    const grilleCartes = document.createElement("div");
+                    grilleCartes.className =
+                        "grid grid-cols-1 md:grid-cols-2 gap-4";
+
+                    groupe.stations.forEach((station) => {
+                        const urlGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${station.lat},${station.lng}`;
+
+                        // Formatage de la distance
+                        const distanceTexte =
+                            station.distanceKm !== null
+                                ? station.distanceKm < 1
+                                    ? `${Math.round(station.distanceKm * 1000)} m`
+                                    : `${station.distanceKm.toFixed(1).replace(".", ",")} km`
+                                : null;
+
+                        // Formatage des carburants disponibles
+                        const carburantsHtml = station.carburants
+                            .map((c) => {
+                                const aUnPrix =
+                                    c.prix !== null && c.prix !== undefined;
+
+                                const prixFormate = aUnPrix
+                                    ? `${c.prix.toFixed(2).replace(".", ",")} €`
+                                    : "Prix non indiqué";
+
+                                // Si le carburant n'a pas de prix -> "Peut-être disponible", sinon -> "Disponible"
+                                const badgeStatut = aUnPrix
+                                    ? `<span class="inline-flex items-center text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                   <i class="fa-solid fa-circle-check mr-1 text-[9px]"></i>Disponible
+                 </span>`
+                                    : `<span class="inline-flex items-center text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                   <i class="fa-solid fa-circle-question mr-1 text-[9px]"></i>Peut-être disponible
+                 </span>`;
+
+                                return `
+              <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950/70 rounded-xl border border-slate-200 dark:border-slate-800/80">
+                <div class="space-y-1">
+                  <div class="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    ${c.nom} <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">(${c.code})</span>
+                  </div>
+                  <div>${badgeStatut}</div>
+                </div>
+
+                <div class="text-right">
+                  <div class="text-sm font-bold font-mono ${aUnPrix ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}">
+                    ${prixFormate}
+                  </div>
+                  ${aUnPrix ? '<span class="text-[10px] text-slate-400 dark:text-slate-500 block">/ Litre</span>' : ""}
+                </div>
+              </div>
+            `;
+                            })
+                            .join("");
+
+                        const horairesHtml = formaterHoraires(
+                            station.opening_hours,
+                            station.est24h,
+                        );
+
+                        // Carte de la station
+                        const carte = document.createElement("div");
+                        carte.className =
+                            "bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition flex flex-col justify-between shadow-sm dark:shadow-none";
+
+                        carte.innerHTML = `
+            <div class="space-y-3">
+              <!-- En-tête station & Badge 24/7 -->
+              <div class="flex items-start justify-between gap-3">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-snug">${station.nom}</h3>
+                ${
+                    station.est24h
+                        ? `
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                    <i class="fa-solid fa-clock mr-1 text-[9px]"></i>24h/24
+                  </span>
+                `
+                        : `
+                  <span class="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex-shrink-0">
+                    Horaires habituels
+                  </span>
+                `
+                }
+              </div>
+
+              <!-- Adresse -->
+              <p class="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1.5 leading-relaxed">
+                <i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mt-0.5 text-[11px] flex-shrink-0"></i>
+                <span>${station.adresse}</span>
+              </p>
+
+              <!-- Liste des carburants -->
+              <div class="space-y-2 pt-1">
+                ${carburantsHtml}
+              </div>
+
+              <!-- Horaires d'ouverture -->
+              <div class="mt-2 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                <div class="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1.5 text-[11px]">
+                  <i class="fa-regular fa-clock text-amber-500"></i> Horaires d'ouverture :
+                </div>
+                <div class="pl-5 space-y-0.5 text-[11px] font-mono leading-tight">
+                  ${horairesHtml}
+                </div>
+              </div>
+            </div>
+
+            <!-- Pied de carte & Distance / Google Maps -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+              <div class="space-y-0.5">
+                ${
+                    distanceTexte
+                        ? `<div class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <i class="fa-solid fa-route text-amber-500"></i> À ${distanceTexte}
+                           </div>`
+                        : ""
+                }
+                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                  GPS: ${station.lat.toFixed(4)}, ${station.lng.toFixed(4)}
+                </div>
+              </div>
+
+              <a 
+                href="${urlGoogleMaps}" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-diamond-turn-right text-amber-500"></i> Itinéraire Google Maps
+              </a>
+            </div>
+          `;
+
+                        grilleCartes.appendChild(carte);
+                    });
+
+                    elementSection.innerHTML = enTeteSection;
+                    elementSection.appendChild(grilleCartes);
+                    conteneur.appendChild(elementSection);
+                });
+            }
+
+            // Initialisation du thème et affichage
+            initTheme();
+            afficherResultats();
+        </script>
+    </body>
+</html>
