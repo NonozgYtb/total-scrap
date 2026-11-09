@@ -152,7 +152,10 @@ vite.config.ts.timestamp-*
 .turbo
 
 docker-compose.yml
+docker-compose.dev.yml
 output/
+dist/
+src/config.ts
 package-lock.json
 results.json
 config.js

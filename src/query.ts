@@ -1,10 +1,13 @@
+import type { PoiResponse } from "./types/poi";
+import type { WoosmapResponse } from "./types/woos";
+
 /**
  * Converts a structured object into a Woosmap / Lucene query string.
  * - Array values for a key are combined with `OR` and wrapped in parentheses.
  * - Key-value groups are combined with `AND`.
  */
-function buildWoosmapQuery(filterObj) {
-    const clauses = Object.entries(filterObj)
+export const buildWoosmapQuery = (filterObj: Record<string, unknown>) =>
+    Object.entries(filterObj)
         .map(([key, value]) => {
             if (value === null || value === undefined) return null;
 
@@ -16,12 +19,10 @@ function buildWoosmapQuery(filterObj) {
                 .join(" OR ");
             return values.length > 1 ? `(${conditionStr})` : conditionStr;
         })
-        .filter(Boolean);
+        .filter(Boolean)
+        .join(" AND ");
 
-    return clauses.join(" AND ");
-}
-
-const getFilters = (fuels) => ({
+export const getFilters = (fuels: string[]) => ({
     tag: fuels,
     type: [
         "OPEN-TOTAL-FUELING",
@@ -57,32 +58,28 @@ const ApiKeyTGS = [
     .map((e) => String.fromCharCode(e))
     .join("");
 
-const makeReq = (lat, lng, radius, fuels) =>
+export const makeReq = (
+    lat: number,
+    lng: number,
+    radius: number,
+    fuels: string[],
+) =>
     fetch(
         `https://api.woosmap.com/stores/search/?${new URLSearchParams({
-            lat,
-            lng,
-            radius,
+            lat: lat.toString(),
+            lng: lng.toString(),
+            radius: radius.toString(),
             query: buildWoosmapQuery(getFilters(fuels)),
             key: ApiKeyWoos,
         }).toString()}`,
         {
-            referrer: "https://services.totalenergies.fr/",
-            method: "GET",
-            mode: "cors",
-            credentials: "omit",
-        },
-    ).then((res) => res.json());
-
-const getPOIInfo = (location_id) =>
-    fetch(
-        `https://apis.poifinder.alzp.tgscloud.net/poi-finder-store-locator-back/api/v1/point-of-interest?location_id=${location_id}&type=FUELING`,
-        {
             headers: {
-                accept: "application/json",
-                "accept-language":
-                    "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7,ja;q=0.6",
-                "api-key": ApiKeyTGS,
+                Accept: "application/json, text/plain, */*",
+                "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+                Referer: "https://services.totalenergies.fr/",
+                Origin: "https://services.totalenergies.fr",
+                "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
                 priority: "u=1, i",
             },
             referrer: "https://services.totalenergies.fr/",
@@ -91,11 +88,26 @@ const getPOIInfo = (location_id) =>
             mode: "cors",
             credentials: "omit",
         },
-    ).then((res) => res.json());
+    ).then((res) => res.json() as Promise<WoosmapResponse>);
 
-module.exports = {
-    buildWoosmapQuery,
-    getFilters,
-    makeReq,
-    getPOIInfo,
-};
+export const getPOIInfo = (location_id: string) =>
+    fetch(
+        `https://apis.poifinder.alzp.tgscloud.net/poi-finder-store-locator-back/api/v1/point-of-interest?location_id=${location_id}&type=FUELING`,
+        {
+            headers: {
+                Accept: "application/json, text/plain, */*",
+                "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+                Referer: "https://services.totalenergies.fr/",
+                Origin: "https://services.totalenergies.fr",
+                "User-Agent":
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
+                priority: "u=1, i",
+                "api-key": ApiKeyTGS,
+            },
+            referrer: "https://services.totalenergies.fr/",
+            body: null,
+            method: "GET",
+            mode: "cors",
+            credentials: "omit",
+        },
+    ).then((res) => res.json() as Promise<PoiResponse>);
